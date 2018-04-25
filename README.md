@@ -1,7 +1,7 @@
-mumpsp
-======
+mumpspy
+=======
 
-A python wrapper for parallel sparse direct solver.
+A python wrapper for the parallel sparse direct solver.
 
 Requirements
 ------------
