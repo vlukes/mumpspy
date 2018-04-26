@@ -30,3 +30,13 @@ or
 
 Usage
 -----
+
+```python
+import mumpspy
+
+solver = mumpspy.MumpsSolver()  # initialize solver
+solver.set_A_centralized(A)  # set sparse matrix
+x = b.copy()
+solver.set_b(x)  # set right hand side
+solver(6)  # analyse, factorize, solve
+del(solver)  # cleanup
