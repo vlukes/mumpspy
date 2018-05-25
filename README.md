@@ -3,6 +3,11 @@ MUMPSpy
 
 A python wrapper for the parallel sparse direct solver.
 
+The wrapper allows to:
+
+* real and complex arithmetic
+* parallel run
+
 Requirements
 ------------
 
@@ -34,7 +39,7 @@ Usage
 ```python
 import mumpspy
 
-solver = mumpspy.MumpsSolver()  # initialize solver
+solver = mumpspy.MumpsSolver(system='real')  # initialize solver, real-valued system
 solver.set_A_centralized(A)  # set sparse matrix
 x = b.copy()
 solver.set_b(x)  # set right hand side
