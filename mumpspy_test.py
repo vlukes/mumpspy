@@ -39,7 +39,7 @@ del(solver)
 
 
 # complex-valued system
-print('real-valued system - expected results: [1+0i, 1+1i, 0+2i, 2+2i]')
+print('complex-valued system - expected results: [1+0i, 1+1i, 0+2i, 2+2i]')
 ridx = np.array([1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4], dtype='i')
 cidx = np.array([1, 2, 3, 1, 2, 3, 2, 3, 4, 3, 4], dtype='i')
 val = np.array([1 + 2j, -2j, 3 + 3j, 1j, 7, 3j, -1, 1j, 1, 3 + 5j, 2 - 3j],
