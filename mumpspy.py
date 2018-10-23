@@ -1,6 +1,6 @@
 import ctypes
 from mpi4py import MPI
-import numpy as nm
+import numpy as np
 import re
 
 MUMPS_VERSION_MAX_LEN_4 = 14
@@ -31,7 +31,7 @@ def load_library(libname):
 
     else:  # Linux system
         lib_fname = 'lib' + libname + '.so'
-    
+
     lib = ctypes.cdll.LoadLibrary(lib_fname)
 
     return lib
@@ -262,8 +262,8 @@ class MumpsSolver(object):
 
         self.struct.job = -1
         self._mumps_c(ctypes.byref(self.struct))
-        arr = nm.ctypeslib.as_array(self.struct.aux)
-        idxs = nm.where(nm.logical_and(arr >= ord('.'), arr <= ord('9')))[0]
+        arr = np.ctypeslib.as_array(self.struct.aux)
+        idxs = np.where(np.logical_and(arr >= ord('.'), arr <= ord('9')))[0]
         s = arr[idxs].tostring()
         self.struct.job = -2
         self.set_silent()
@@ -310,24 +310,24 @@ class MumpsSolver(object):
 
         self.struct = None
 
-    def set_A_centralized(self, A):
+    def set_mtx_centralized(self, mtx):
         """
         Set the sparse matrix.
 
         Parameters
         ----------
-        A : scipy sparse martix
+        mtx : scipy sparse martix
             The sparse matrix.
         """
         if not(self.rank == 0):
             return
 
-        assert A.shape[0] == A.shape[1]
+        assert mtx.shape[0] == mtx.shape[1]
 
-        A = A.tocoo()
-        rr = A.row + 1
-        cc = A.col + 1
-        self.set_rcd_centralized(rr, cc, A.data, A.shape[0])
+        mtx = mtx.tocoo()
+        rr = mtx.row + 1
+        cc = mtx.col + 1
+        self.set_rcd_centralized(rr, cc, mtx.data, mtx.shape[0])
 
     def set_rcd_centralized(self, ir, ic, data, n):
         """
@@ -354,15 +354,81 @@ class MumpsSolver(object):
         self._data.update(ir=ir, ic=ic, data=data)
         self.struct.n = n
         self.struct.nz = ir.shape[0]
-        self.struct.nnz = ir.shape[0]
+        if hasattr(self.struct, 'nnz'):
+            self.struct.nnz = ir.shape[0]
         self.struct.irn = ir.ctypes.data_as(mumps_pint)
         self.struct.jcn = ic.ctypes.data_as(mumps_pint)
         self.struct.a = data.ctypes.data_as(mumps_pcomplex)
 
-    def set_b(self, b):
+    def set_rhs(self, rhs):
         """Set the right hand side of the linear system."""
-        self._data.update(b=b)
-        self.struct.rhs = b.ctypes.data_as(mumps_pcomplex)
+        self._data.update(rhs=rhs)
+        self.struct.rhs = rhs.ctypes.data_as(mumps_pcomplex)
+
+    def get_schur(self, schur_list):
+        """Get the Schur matrix and the condensed right-hand side vector.
+
+        Parameters
+        ----------
+        schur_list : array
+            The list of the Schur variables.
+
+        Returns
+        -------
+        schur_arr : array
+            The Schur matrix of order 'schur_size'.
+        schur_rhs : array
+            The reduced right-hand side vector. 
+        """
+        # Schur
+        schur_size = schur_list.shape[0]
+        schur_arr = np.empty((schur_size**2, ), dtype='d')
+        schur_rhs = np.empty((schur_size, ), dtype='d')
+        self._schur_rhs = schur_rhs
+
+        self.struct.size_schur = schur_size
+        self.struct.listvar_schur = schur_list.ctypes.data_as(mumps_pint)
+        self.struct.schur = schur_arr.ctypes.data_as(mumps_pcomplex)
+        self.struct.lredrhs = schur_size
+        self.struct.redrhs = schur_rhs.ctypes.data_as(mumps_pcomplex)
+
+        # get matrix
+        self.struct.schur_lld = schur_size
+        self.struct.nprow = 1
+        self.struct.npcol = 1
+        self.struct.mbloc = 100
+        self.struct.nbloc = 100
+
+        self.struct.icntl[18] = 3  # centr. Schur complement stored by columns
+        self.struct.job = 4  # analyze + factorize
+        self._mumps_c(ctypes.byref(self.struct))
+
+        # get RHS
+        self.struct.icntl[25] = 1  # Reduction/condensation phase
+        self.struct.job = 3  # solve
+        self._mumps_c(ctypes.byref(self.struct))
+
+        return schur_arr.reshape((schur_size, schur_size)), schur_rhs
+
+    def expand_schur(self, x2):
+        """Expand the Schur local solution on the complete solution.
+
+        Parameters
+        ----------
+        x2 : array
+            The local Schur solution.
+
+        Returns
+        -------
+        x : array
+            The global solution.
+        """
+        self._schur_rhs[:] = x2
+        self.struct.icntl[25] = 2  # Expansion phase
+        self.struct.job = 3  # solve
+        self._mumps_c(ctypes.byref(self.struct))
+
+        return self._data['rhs']
 
     def __call__(self, job):
         """Set the job and call MUMPS."""

@@ -7,6 +7,7 @@ The wrapper allows to:
 
 * real and complex arithmetic
 * parallel run
+* Schur complement calculation
 
 Requirements
 ------------
@@ -40,8 +41,9 @@ Usage
 import mumpspy
 
 solver = mumpspy.MumpsSolver(system='real')  # initialize solver, real-valued system
-solver.set_A_centralized(A)  # set sparse matrix
+solver.set_mtx_centralized(A)  # set sparse matrix
 x = b.copy()
-solver.set_b(x)  # set right hand side
+solver.set_rhs(x)  # set right-hand side
 solver(6)  # analyse, factorize, solve
+print x
 del(solver)  # cleanup
