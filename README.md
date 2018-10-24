@@ -47,3 +47,13 @@ solver.set_rhs(x)  # set right-hand side
 solver(6)  # analyse, factorize, solve
 print x
 del(solver)  # cleanup
+```
+
+Compatibility
+-------------
+
+Tested for the following MUMPS library versions:
+
+* 4.10.0
+* 5.0.1, 5.0.2
+* 5.1.2
