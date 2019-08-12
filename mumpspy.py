@@ -231,7 +231,7 @@ class MumpsSolver(object):
         self._mumps_c(ctypes.byref(self.struct))
         arr = np.ctypeslib.as_array(self.struct.aux)
         idxs = np.where(np.logical_and(arr >= ord('.'), arr <= ord('9')))[0]
-        s = arr[idxs].tostring()
+        s = arr[idxs].tostring().decode('ascii')
         self.struct.job = -2
         self.set_silent()
         self._mumps_c(ctypes.byref(self.struct))
