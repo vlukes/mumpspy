@@ -13,11 +13,11 @@ setup(
     license='MIT',
 
     classifiers=[
-        'Development Status :: 3 - Alpha',  # 3 - Alpha, 4 - Beta, 5 - Stable
+        'Development Status :: 4 - Beta',  # 3 - Alpha, 4 - Beta, 5 - Stable
         'Intended Audience :: Developers',
         'Topic :: Scientific/Engineering :: Mathematics',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.8',
     ],
 
     keywords='sparse solver',
