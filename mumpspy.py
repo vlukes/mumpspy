@@ -21,9 +21,7 @@ mumps_libs = {}
 
 
 def dec(val, encoding='utf-8'):
-    """
-    Decode given bytes using the specified encoding.
-    """
+    """Decode given bytes using the specified encoding."""
     import sys
     if isinstance(val, bytes) and sys.version_info > (3, 0):
         val = val.decode(encoding)
@@ -55,6 +53,7 @@ def load_mumps_libraries():
 
 
 def coo_is_symmetric(mtx, tol=1e-9):
+    """Check sparse matrix symmetry."""
     a_at = mtx - mtx.T
 
     if a_at.nnz == 0 or nm.all(nm.abs(a_at.data) < tol):
@@ -205,14 +204,13 @@ mumps_c_updates = {  # incremental updates related to version 4.10.0
 
 
 def version_to_int(v):
+    """Convert version string to integer ('5.2.1' --> 5002001)."""
     return nm.sum([int(vk) * 10**(3*k)
-                    for k, vk in enumerate(v.split('.')[::-1])])
+                   for k, vk in enumerate(v.split('.')[::-1])])
 
 
 def get_mumps_c_fields(version):
-    """
-    Return the MUMPS C structure for a given MUMPS version.
-    """
+    """Return the MUMPS C structure for a given MUMPS version."""
     def update_fields(f, update_f):
         for uf in update_f:
             fk = [k for k, _ in f]
@@ -264,11 +262,11 @@ class MumpsSolver(object):
 
         Parameters
         ----------
-        sym : int
-            1 = symmetric system
+        is_sym : bool
+            Symmetric matrix?
         mpi_comm : MPI Communicator or None
             If None, use MPI.COMM_WORLD
-        system : one of 'real', 'comples'
+        system : 'real' or 'complex'
             Use real or complex linear solver.
         silent : bool
             If True, no MUMPS error, warning, and diagnostic messages.
