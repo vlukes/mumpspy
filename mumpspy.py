@@ -350,7 +350,7 @@ class MumpsSolver(object):
 
         self.struct = None
 
-    def set_mtx_centralized(self, mtx):
+    def set_mtx(self, mtx):
         """
         Set the sparse matrix.
 
@@ -371,7 +371,7 @@ class MumpsSolver(object):
 
         self.set_rcd_centralized(rr, cc, data, mtx.shape[0])
 
-    def set_rcd_centralized(self, ir, ic, data, n):
+    def set_rcd_mtx(self, ir, ic, data, n):
         """
         Set the matrix by row and column indicies and data vector.
         The matrix shape is determined by the maximal values of
