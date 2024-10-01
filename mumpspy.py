@@ -454,17 +454,17 @@ class MumpsSolver(object):
         return schur_arr.reshape((schur_size, schur_size)), schur_rhs
 
     def expand_schur(self, x2):
-        """Expand the Schur local solution on the complete solution.
+        """Expand to a complete solution.
 
         Parameters
         ----------
         x2 : array
-            The local Schur solution.
+            Partial solution
 
         Returns
         -------
         x : array
-            The global solution.
+            Complete solution
         """
         self._schur_rhs[:] = x2
         self.struct.icntl[25] = 2  # Expansion phase
