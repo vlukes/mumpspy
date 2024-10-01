@@ -40,7 +40,7 @@ Usage
 ```python
 import mumpspy
 
-solver = mumpspy.MumpsSolver(system='real')  # initialize solver, real-valued system
+solver = mumpspy.MumpsSolver()  # initialize solver, real-valued system
 solver.set_mtx_centralized(A)  # set sparse matrix
 x = b.copy()
 solver.set_rhs(x)  # set right-hand side
@@ -55,7 +55,7 @@ Compatibility
 Tested for the following MUMPS library versions:
 
 * 4.10.0
-* 5.0.1, 5.0.2
+* 5.0.2
 * 5.1.2
 * 5.2.1
 * 5.4.1
