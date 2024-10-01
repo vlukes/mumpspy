@@ -54,29 +54,15 @@ def load_mumps_libraries():
     mumps_libs['zmumps'] = load_library('zmumps').zmumps_c
 
 
-def coo_is_symmetric(mtx, tol=1e-6):
-    r, c = mtx.row, mtx.col
-    odiag = nm.where(r != c)[0]
-    if odiag.shape[0] == 0:
+def coo_is_symmetric(mtx, tol=1e-9):
+    a_at = mtx - mtx.T
+
+    if a_at.nnz == 0 or nm.all(nm.abs(a_at.data) < tol):
         return True
 
-    odr, odc, odd = r[odiag], c[odiag], mtx.data[odiag]
-
-    idxs = nm.where(odc > odr)[0]
-    if (idxs.shape[0] * 2) == odiag.shape[0]:
-        odr[idxs], odc[idxs] = odc[idxs], odr[idxs]
-
-        idxs = nm.lexsort((odc, odr))
-        odr, odc, odd = odr[idxs], odc[idxs], odd[idxs]
-        d1 = nm.abs(nm.diff(nm.vstack([odr, odc]))).sum(axis=0)
-        d2 = nm.diff(odd)
-        if nm.all(d1[::2] == 0):
-            vals = nm.abs(d2[::2])
-            idxs = nm.where(vals > nm.finfo(vals.dtype).resolution)[0]
-            odd_rs = odd.reshape((vals.shape[0], 2))
-            vals[idxs] /= nm.abs(odd_rs).max(axis=1)[idxs]
-            if nm.all(vals < tol):
-                return True
+    norm = nm.linalg.norm(mtx.data)
+    if nm.all(nm.abs(a_at.data) < tol * norm):
+        return True
 
     return False
 
