@@ -5,8 +5,8 @@ here = path.abspath(path.dirname(__file__))
 setup(
     name='MUMPSpy',
     description='MUMPS for Python',
-    long_description='A python wrapper for the parallel sparse direct solver.',
-    version='1.0.0',
+    long_description='A Python wrapper for the parallel sparse direct solver.',
+    version='1.1.0',
     url='https://github.com/vlukes/mumpspy',
     author='Vladimír Lukeš',
     author_email='vlukes@kme.zcu.cz',
@@ -17,10 +17,10 @@ setup(
         'Intended Audience :: Developers',
         'Topic :: Scientific/Engineering :: Mathematics',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.10',
     ],
 
     keywords='sparse solver',
     packages=find_packages(),
-    install_requires=['mpi4py'],
+    install_requires=['mpi4py', 'scipy', 'numpy'],
 )
