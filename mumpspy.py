@@ -357,7 +357,7 @@ class MumpsSolver(object):
 
         self.struct = None
 
-    def set_mtx(self, mtx):
+    def set_mtx(self, mtx, factorize=True):
         """
         Set the sparse matrix.
 
@@ -376,9 +376,9 @@ class MumpsSolver(object):
             idxs = nm.where(cc >= rr)[0]  # upper triangular matrix
             rr, cc, data = rr[idxs], cc[idxs], data[idxs]
 
-        self.set_rcd_centralized(rr, cc, data, mtx.shape[0])
+        self.set_rcd_mtx(rr, cc, data, mtx.shape[0], factorize)
 
-    def set_rcd_mtx(self, ir, ic, data, n):
+    def set_rcd_mtx(self, ir, ic, data, n, factorize=True):
         """
         Set the matrix by row and column indicies and data vector.
         The matrix shape is determined by the maximal values of
@@ -397,7 +397,7 @@ class MumpsSolver(object):
         """
         assert ir.shape[0] == ic.shape[0] == data.shape[0]
 
-        self._data.update(ir=ir, ic=ic, data=data)
+        self._data.update(ir=ir, ic=ic, vals=data, factorized=factorize)
         self.struct.n = n
         self.struct.nz = ir.shape[0]
         if hasattr(self.struct, 'nnz'):
@@ -405,6 +405,9 @@ class MumpsSolver(object):
         self.struct.irn = ir.ctypes.data_as(mumps_pint)
         self.struct.jcn = ic.ctypes.data_as(mumps_pint)
         self.struct.a = data.ctypes.data_as(mumps_pcomplex)
+
+        if factorize:
+            self._mumps_call(4)
 
     def set_rhs(self, rhs):
         """Set the right hand side of the linear system."""
@@ -525,6 +528,17 @@ class MumpsSolver(object):
 
         if self.struct.infog[0] < 0:
             raise RuntimeError("MUMPS error: %d" % self.struct.infog[0])
+
+    def solve(self, b=None):
+        if b is not None:
+            self.set_rhs(b.copy())
+
+        if 'factorized' in self._data and self._data['factorized']:
+            self(3)
+        else:
+            self(6)
+
+        return self._data['rhs']
 
     def schur_solve(self, schur_list, b=None):
         import scipy.linalg as sla
