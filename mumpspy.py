@@ -29,7 +29,7 @@ def dec(val, encoding='utf-8'):
 
 
 def load_library(libname):
-    """Load shared library in a system dependent way."""
+    """Load the shared library in a system dependent way."""
     import sys
 
     if sys.platform.startswith('win'):  # Windows system
@@ -53,7 +53,7 @@ def load_mumps_libraries():
 
 
 def coo_is_symmetric(mtx, tol=1e-9):
-    """Check sparse matrix symmetry."""
+    """Symmetry check of the sparse matrix."""
     a_at = mtx - mtx.T
 
     if a_at.nnz == 0 or nm.all(nm.abs(a_at.data) < tol):
@@ -204,7 +204,7 @@ mumps_c_updates = {  # incremental updates related to version 4.10.0
 
 
 def version_to_int(v):
-    """Convert version string to integer ('5.2.1' --> 5002001)."""
+    """Convert the version string to an integer ('5.2.1' --> 5002001)."""
     return nm.sum([int(vk) * 10**(3*k)
                    for k, vk in enumerate(v.split('.')[::-1])])
 
@@ -265,7 +265,7 @@ class MumpsSolver(object):
     def __init__(self, is_sym=False, mpi_comm=None,
                  system='real', silent=True, mem_relax=20):
         """
-        Init MUMUPS solver.
+        Init the MUMUPS solver.
 
         Parameters
         ----------
@@ -274,11 +274,11 @@ class MumpsSolver(object):
         mpi_comm : MPI Communicator or None
             If None, use MPI.COMM_WORLD
         system : 'real' or 'complex'
-            Use real or complex linear solver.
+            Use real or complex linear solver
         silent : bool
-            If True, no MUMPS error, warning, and diagnostic messages.
+            If True, no MUMPS error, warning, and diagnostic messages
         mem_relax : int
-            The percentage increase in the estimated working space.
+            The percentage increase in the estimated working space
         """
         self.struct = None
 
@@ -364,7 +364,7 @@ class MumpsSolver(object):
         Parameters
         ----------
         mtx : scipy sparse martix
-            The sparse matrix in COO format.
+            Sparse matrix in COO format
         """
         assert mtx.shape[0] == mtx.shape[1]
 
@@ -380,20 +380,20 @@ class MumpsSolver(object):
 
     def set_rcd_mtx(self, ir, ic, data, n, factorize=True):
         """
-        Set the matrix by row and column indicies and data vector.
+        Set the matrix using row and column indices and a data vector.
         The matrix shape is determined by the maximal values of
-        row and column indicies. The indices start with 1.
+        the row and column indices. The indices start with 1.
 
         Parameters
         ----------
         ir : array
-            The row idicies.
+            Row idicies
         ic : array
-            The column idicies.
+            Column idicies
         data : array
-            The matrix entries.
+            Matrix entries
         n : int
-            The matrix dimension.
+            Matrix dimension
         """
         assert ir.shape[0] == ic.shape[0] == data.shape[0]
 
@@ -430,12 +430,12 @@ class MumpsSolver(object):
         Parameters
         ----------
         schur_list : array
-            The list of the Schur DOFs (indexing starts with 1).
+            List of Schur DOFs (indexing starts with 1)
 
         Returns
         -------
         schur_arr : array
-            The Schur matrix of order 'schur_size'.
+            Schur matrix
         """
         # Schur
         schur_size = schur_list.shape[0]
@@ -492,7 +492,7 @@ class MumpsSolver(object):
         return schur_rhs
 
     def schur_expansion(self, x2):
-        """Expand to a complete solution.
+        """Expansion to a complete solution.
 
         Parameters
         ----------
@@ -530,6 +530,18 @@ class MumpsSolver(object):
             raise RuntimeError("MUMPS error: %d" % self.struct.infog[0])
 
     def solve(self, b=None):
+        """Solve the linear system.
+
+        Parameters
+        ----------
+        b : array
+            Right hand side
+
+        Returns
+        -------
+        x : array
+            Solution: x = inv(A) * b
+        """
         if b is not None:
             self.set_rhs(b.copy())
 
@@ -541,6 +553,20 @@ class MumpsSolver(object):
         return self._data['rhs']
 
     def schur_solve(self, schur_list, b=None):
+        """Solve the linear system using the Schur complement method.
+
+        Parameters
+        ----------
+        schur_list : array
+            List of Schur DOFs (indexing starts with 1)
+        b : array
+            Right hand side
+
+        Returns
+        -------
+        x : array
+            Solution: x = inv(A) * b
+        """
         import scipy.linalg as sla
 
         S = self.schur_complement(schur_list)
