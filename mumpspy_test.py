@@ -17,7 +17,7 @@ def print_arr(a):
 
 
 def check_solution(exp, sol):
-    return 'passed' if np.linalg.norm(exp_x - x) < 1e-9 else 'failed'
+    return 'passed' if np.linalg.norm(exp_x - x) < 1e-9 else 'failed!'
 
 
 # real-valued system
@@ -32,26 +32,25 @@ exp_x = np.array([1, 2, 3, 4], dtype='d')
 A = sps.coo_matrix((val, (ridx - 1, cidx - 1)), shape=(4, 4))
 
 s = '\n       '.join([print_arr(ii) for ii in A.toarray()])
-print('  A: [ %s ]' % s)
-print('  b: [ %s ]' % print_arr(b))
-print('  expected result: [ %s ]' % print_arr(exp_x))
+print(f'  A: [ {s} ]')
+print(f'  b: [ {print_arr(b)} ]')
+print(f'  expected result:        [ {print_arr(exp_x)} ]')
 
 solver = mumpspy.MumpsSolver()
-x = b.copy()
-solver.set_rhs(x)
-solver.set_rcd_centralized(ridx, cidx, val, 4)
-solver(6)  # analyse, factorize, solve
-print('  solution %s: [ %s ] (set_rcd_centralized)'
-      % (check_solution(exp_x, x), print_arr(x)))
+solver.set_rcd_mtx(ridx, cidx, val, 4)
+x = solver.solve(b)
 
-solver.set_mtx_centralized(A)
-x = b.copy()
-solver.set_rhs(x)
-solver(6)  # analyse, factorize, solve
-print('  solution %s: [ %s ] (set_mtx_centralized)\n'
-      % (check_solution(exp_x, x), print_arr(x)))
+check = check_solution(exp_x, x)
+print(f'  solution (set_rcd_mtx): [ {print_arr(np.round(x, 9))} ] ({check})')
 
-del(solver)
+solver.set_mtx(A)
+solver.set_rhs(b)  # b will be overwritten!
+x = solver.solve()  # x is b: True
+
+check = check_solution(exp_x, x)
+print(f'  solution (set_mtx):     [ {print_arr(np.round(x, 9))} ] ({check})\n')
+
+del solver
 
 
 # complex-valued system
@@ -67,19 +66,18 @@ exp_x = np.array([1 + 0j, 1 + 1j, 0 + 2j, 2 + 2j], dtype='D')
 A = sps.coo_matrix((val, (ridx - 1, cidx - 1)), shape=(4, 4))
 
 s = '\n       '.join([print_arr(ii) for ii in A.toarray()])
-print('  A: [ %s ]' % s)
-print('  b: [ %s ]' % print_arr(b))
-print('  expected result: [ %s ]' % print_arr(exp_x))
+print(f'  A: [ {s} ]')
+print(f'  b: [ {print_arr(b)} ]')
+print(f'  expected result: [ {print_arr(exp_x)} ]')
 
 solver = mumpspy.MumpsSolver(system='complex')
-solver.set_mtx_centralized(A)
-x = b.copy()
-solver.set_rhs(x)
-solver(6)  # analyse, factorize, solve
-print('  solution %s: [ %s ]\n'
-      % (check_solution(exp_x, x), print_arr(np.round(x, 9))))
+solver.set_mtx(A)
+x = solver.solve(b)
 
-del(solver)
+check = check_solution(exp_x, x)
+print(f'  solution:        [ {print_arr(np.round(x, 9))} ] ({check})\n')
+
+del solver
 
 
 # Schur complement
@@ -101,13 +99,11 @@ print('  Schur list: [ %s ]' % print_arr(schur_list))
 print('  expected result: [ %s ]' % print_arr(exp_x))
 
 solver = mumpspy.MumpsSolver()
-solver.set_mtx_centralized(A)
-x = b.copy()
-solver.set_rhs(x)
-S, y2 = solver.get_schur(schur_list)
-x2 = sla.solve(S.T, y2)
-x = solver.expand_schur(x2)
-print('  solution %s: [ %s ]\n'
-      % (check_solution(exp_x, x), print_arr(np.round(x, 9))))
+solver.set_mtx(A)
+x = solver.solve_schur(schur_list, b)
 
-del(solver)
+check = check_solution(exp_x, x)
+print(f'  solution:        [ {print_arr(np.round(x, 9))} ] ({check})\n')
+
+del solver
+
