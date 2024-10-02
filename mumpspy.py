@@ -421,7 +421,7 @@ class MumpsSolver(object):
 
         self._mumps_call(job)
 
-    def get_schur(self, schur_list):
+    def schur_complement(self, schur_list):
         """Get the Schur matrix and the condensed right-hand side vector.
 
         Parameters
@@ -433,20 +433,14 @@ class MumpsSolver(object):
         -------
         schur_arr : array
             The Schur matrix of order 'schur_size'.
-        schur_rhs : array
-            The reduced right-hand side vector.
         """
         # Schur
         schur_size = schur_list.shape[0]
         schur_arr = nm.empty((schur_size**2, ), dtype='d')
-        schur_rhs = nm.empty((schur_size, ), dtype='d')
-        self._schur_rhs = schur_rhs
 
         self.struct.size_schur = schur_size
         self.struct.listvar_schur = schur_list.ctypes.data_as(mumps_pint)
         self.struct.schur = schur_arr.ctypes.data_as(mumps_pcomplex)
-        self.struct.lredrhs = schur_size
-        self.struct.redrhs = schur_rhs.ctypes.data_as(mumps_pcomplex)
 
         # get matrix
         self.struct.schur_lld = schur_size
@@ -459,14 +453,42 @@ class MumpsSolver(object):
         self.struct.job = 4  # analyze + factorize
         self._mumps_c(ctypes.byref(self.struct))
 
-        # get RHS
+        return schur_arr.reshape((schur_size, schur_size))
+
+    def schur_reduction(self, b=None):
+        """Schur recuction/condensation phase.
+
+        Parameters
+        ----------
+        b : array
+            RHS vector
+
+        Returns
+        -------
+        schur_rhs : array
+            Reduced/condensed RHS
+        """
+        if b is not None:
+            self.set_rhs(b.copy())
+
+        if 'rhs' not in self._data:
+            raise ValueError('The right hand side vector is not set!')
+
+        schur_size = self.struct.size_schur
+
+        schur_rhs = nm.empty((schur_size, ), dtype='d')
+        self._schur_rhs = schur_rhs
+        self.struct.lredrhs = schur_size
+        self.struct.redrhs = schur_rhs.ctypes.data_as(mumps_pcomplex)
+
+        # get reduced/condensed RHS
         self.struct.icntl[25] = 1  # Reduction/condensation phase
         self.struct.job = 3  # solve
         self._mumps_c(ctypes.byref(self.struct))
 
-        return schur_arr.reshape((schur_size, schur_size)), schur_rhs
+        return schur_rhs
 
-    def expand_schur(self, x2):
+    def schur_expansion(self, x2):
         """Expand to a complete solution.
 
         Parameters
@@ -503,3 +525,12 @@ class MumpsSolver(object):
 
         if self.struct.infog[0] < 0:
             raise RuntimeError("MUMPS error: %d" % self.struct.infog[0])
+
+    def schur_solve(self, schur_list, b=None):
+        import scipy.linalg as sla
+
+        S = self.schur_complement(schur_list)
+        y2 = self.schur_reduction(b)
+        x2 = sla.solve(S.T, y2)
+
+        return self.schur_expansion(x2)

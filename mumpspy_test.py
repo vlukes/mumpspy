@@ -100,7 +100,7 @@ print('  expected result: [ %s ]' % print_arr(exp_x))
 
 solver = mumpspy.MumpsSolver()
 solver.set_mtx(A)
-x = solver.solve_schur(schur_list, b)
+x = solver.schur_solve(schur_list, b)
 
 check = check_solution(exp_x, x)
 print(f'  solution:        [ {print_arr(np.round(x, 9))} ] ({check})\n')
