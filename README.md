@@ -24,26 +24,27 @@ packages:
 Installation
 ------------
 
-* Download the code from the git repository:
-
-      git clone git://github.com/vlukes/mumpspy
-
-or
-
-* Use [pip](https://pypi.org/project/pip/):
-
-      pip install git+git://github.com/vlukes/mumpspy
+      pip install mumpspy
 
 Usage
 -----
 
 ```python
 import mumpspy
+import numpy as np
+import scipy.sparse as sp
+
+row = np.array([0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3])
+col = np.array([0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 0, 1])
+val = np.array([1, 2, 2, 1, 1, 3, -1, 2, 1, 1, 3, 1], dtype='d')
+b = np.array([15, 12, 3, 5], dtype='d')
+
+A = sp.coo_matrix((val, (row, col)), shape=(4, 4))
 
 solver = mumpspy.MumpsSolver()  # initialize solver, real-valued system
 solver.set_mtx(A)  # set sparse matrix
 x = solver.solve(b)  # solve system for a given right-hand side
-print x
+print(x)
 ```
 
 Compatibility
