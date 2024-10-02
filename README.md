@@ -41,12 +41,9 @@ Usage
 import mumpspy
 
 solver = mumpspy.MumpsSolver()  # initialize solver, real-valued system
-solver.set_mtx_centralized(A)  # set sparse matrix
-x = b.copy()
-solver.set_rhs(x)  # set right-hand side
-solver(6)  # analyse, factorize, solve
+solver.set_mtx(A)  # set sparse matrix
+x = solver.solve(b)  # solve system for a given right-hand side
 print x
-del(solver)  # cleanup
 ```
 
 Compatibility
