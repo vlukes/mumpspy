@@ -232,8 +232,15 @@ def get_mumps_c_fields(version):
     update_keys.sort()
 
     vnum = version_to_int(version)
-    if vnum < version_to_int(MIN_SUPPORTED_VERSION)
+    if vnum < version_to_int(MIN_SUPPORTED_VERSION):
+        msg = (f'MUMPS version {version} not supported! '
+               f'({version} < {MIN_SUPPORTED_VERSION})')
+        raise ValueError(msg)
 
+    if vnum > version_to_int(MAX_SUPPORTED_VERSION):
+        msg = (f'MUMPS version {version} not supported! '
+               f'({version} > {MAX_SUPPORTED_VERSION})')
+        raise ValueError(msg)
 
     fields = mumps_c_fields.copy()
     for ukey in update_keys:
@@ -406,6 +413,12 @@ class MumpsSolver(object):
 
     def __call__(self, job):
         """Set the job and call MUMPS."""
+        if 'vals' not in self._data:
+            raise ValueError('The matrix is not set!')
+
+        if job in [3, 5, 6] and 'rhs' not in self._data:
+            raise ValueError('The right hand side vector is not set!')
+
         self._mumps_call(job)
 
     def get_schur(self, schur_list):
