@@ -411,8 +411,26 @@ class MumpsSolver(object):
 
     def set_rhs(self, rhs):
         """Set the right hand side of the linear system."""
+        if not rhs.data.f_contiguous:
+            rhs = nm.asarray(rhs, order='F')
+
+        n = self.struct.n
+        if rhs.shape[0] != n:
+            msg = ('Wrong size of the right hand side vector/matrix! '
+                   f'(rhs: {rhs.shape}, mtx: ({n}, {n}))')
+            raise ValueError(msg)
+
         self._data.update(rhs=rhs)
         self.struct.rhs = rhs.ctypes.data_as(mumps_pcomplex)
+        self.struct.lrhs = rhs.shape[0]
+
+        if len(rhs.shape) == 1:
+            self.struct.nrhs = 1
+        elif len(rhs.shape) == 2:
+            self.struct.nrhs = rhs.shape[-1]
+        else:
+            raise ValueError('The right hand side must be a vector/matrix!')
+
 
     def __call__(self, job):
         """Set the job and call MUMPS."""
@@ -479,7 +497,8 @@ class MumpsSolver(object):
 
         schur_size = self.struct.size_schur
 
-        schur_rhs = nm.empty((schur_size, ), dtype='d')
+        nrhs = self.struct.nrhs
+        schur_rhs = nm.empty((schur_size, nrhs), dtype='d', order='F')
         self._schur_rhs = schur_rhs
         self.struct.lredrhs = schur_size
         self.struct.redrhs = schur_rhs.ctypes.data_as(mumps_pcomplex)
