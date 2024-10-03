@@ -7,7 +7,7 @@ homepage = "https://github.com/vlukes/mumpspy"
 
 [project]
 name = "mumpspy"
-version = "1.1.0"
+version = "1.2.0"
 readme = "README.md"
 description="MUMPS for Python"
 license = {file = "LICENSE"}
