@@ -1,12 +1,11 @@
 MUMPSpy
 =======
 
-A python wrapper for the parallel sparse direct solver.
+A python wrapper for the sparse direct solver.
 
-The wrapper allows to:
+The wrapper allows:
 
-* real and complex arithmetic
-* parallel run
+* real and complex factorization of symmetric or non-symmetric matrices
 * Schur complement calculation
 
 Requirements
