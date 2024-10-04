@@ -94,8 +94,10 @@ class MumpsSolver(object):
 
         if system == 'real':
             self._mumps_c = mumps_libs['dmumps']
+            self.dtype = nm.float64
         elif system == 'complex':
             self._mumps_c = mumps_libs['zmumps']
+            self.dtype = nm.complex128
 
         self.mpi_comm = MPI.COMM_WORLD if mpi_comm is None else mpi_comm
         self._mumps_c.restype = None
@@ -179,6 +181,10 @@ class MumpsSolver(object):
         """
         assert ir.shape[0] == ic.shape[0] == data.shape[0]
 
+        ir = nm.asarray(ir, dtype=nm.int32)
+        ic = nm.asarray(ic, dtype=nm.int32)
+        data = nm.asarray(data, dtype=self.dtype)
+
         self._data.update(ir=ir, ic=ic, vals=data, factorized=factorize)
         self.struct.n = n
         self.struct.nz = ir.shape[0]
@@ -193,8 +199,7 @@ class MumpsSolver(object):
 
     def set_rhs(self, rhs):
         """Set the right hand side of the linear system."""
-        if not rhs.data.f_contiguous:
-            rhs = nm.asarray(rhs, order='F')
+        rhs = nm.asarray(rhs, order='F', dtype=self.dtype)
 
         n = self.struct.n
         if rhs.shape[0] != n:
@@ -238,8 +243,9 @@ class MumpsSolver(object):
             Schur matrix
         """
         # Schur
+        schur_list = nm.asarray(schur_list, dtype=nm.int32)
         schur_size = schur_list.shape[0]
-        schur_arr = nm.empty((schur_size**2, ), dtype='d')
+        schur_arr = nm.empty((schur_size**2, ), dtype=self.dtype)
 
         self.struct.size_schur = schur_size
         self.struct.listvar_schur = schur_list.ctypes.data_as(PMumpsInt)
@@ -280,7 +286,7 @@ class MumpsSolver(object):
         schur_size = self.struct.size_schur
 
         nrhs = self.struct.nrhs
-        schur_rhs = nm.empty((schur_size, nrhs), dtype='d', order='F')
+        schur_rhs = nm.empty((schur_size, nrhs), dtype=self.dtype, order='F')
         self._schur_rhs = schur_rhs
         self.struct.lredrhs = schur_size
         self.struct.redrhs = schur_rhs.ctypes.data_as(PMumpsComplex)
