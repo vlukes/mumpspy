@@ -2,8 +2,8 @@
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.packages.find]
-where = ["mumpspy"]
+[tool.setuptools]
+packages = ["mumpspy"]
 
 [project.urls]
 homepage = "https://github.com/vlukes/mumpspy"
