@@ -47,8 +47,8 @@ def get_lib_version():
 
     arr = nm.ctypeslib.as_array(struct.aux)
     idxs = nm.logical_and(arr >= ord('.'), arr <= ord('9'))
-    s = (arr[idxs].tostring()).decode('utf-8')
-    vnums = re.findall('^.*(\d)\.(\d+)\.(\d+).*$', s)[-1]
+    s = (arr[idxs].tobytes()).decode('utf-8')
+    vnums = re.findall(r'^.*(\d)\.(\d+)\.(\d+).*$', s)[-1]
     version = '.'.join(vnums)
 
     struct.job = -2  # terminate package instance
