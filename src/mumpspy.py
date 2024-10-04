@@ -245,7 +245,8 @@ class MumpsSolver(object):
         # Schur
         schur_list = nm.asarray(schur_list, dtype=nm.int32)
         schur_size = schur_list.shape[0]
-        schur_arr = nm.empty((schur_size**2, ), dtype=self.dtype)
+        schur_arr = nm.empty((schur_size, schur_size),
+                             dtype=self.dtype, order='C')
 
         self.struct.size_schur = schur_size
         self.struct.listvar_schur = schur_list.ctypes.data_as(PMumpsInt)
@@ -262,7 +263,7 @@ class MumpsSolver(object):
         self.struct.job = 4  # analyze + factorize
         self._mumps_c(ctypes.byref(self.struct))
 
-        return schur_arr.reshape((schur_size, schur_size))
+        return schur_arr
 
     def schur_reduction(self, b=None):
         """Schur recuction/condensation phase.
@@ -378,6 +379,7 @@ class MumpsSolver(object):
 
         S = self.schur_complement(schur_list)
         y2 = self.schur_reduction(b)
-        x2 = sla.solve(S.T, y2)
+        assume_a = 'sym' if self.struct.sym else 'gen'
+        x2 = sla.solve(S.T, y2, assume_a=assume_a)
 
         return self.schur_expansion(x2)
