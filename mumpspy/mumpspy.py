@@ -5,8 +5,6 @@ import re
 from mumps_lib_c_struc import (define_mumps_c_struc, c_pointer,
                                PMumpsComplex, PMumpsInt)
 
-__version__ = '1.3.0'
-
 
 def load_library(libname):
     """Load the shared library in a system dependent way."""
