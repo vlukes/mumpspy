@@ -2,8 +2,8 @@ import ctypes
 from mpi4py import MPI
 import numpy as nm
 import re
-from mumps_lib_c_struc import (define_mumps_c_struc, c_pointer,
-                               PMumpsComplex, PMumpsInt)
+from .mumps_lib_c_struc import (define_mumps_c_struc, c_pointer,
+                                PMumpsComplex, PMumpsInt)
 
 
 def load_library(libname):
