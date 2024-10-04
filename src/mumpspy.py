@@ -5,7 +5,7 @@ import re
 from mumps_lib_c_struc import (define_mumps_c_struc, c_pointer,
                                PMumpsComplex, PMumpsInt)
 
-__version__ = '1.2.0'
+__version__ = '1.2.1'
 
 
 def load_library(libname):
