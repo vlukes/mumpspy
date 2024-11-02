@@ -333,7 +333,7 @@ class MumpsSolver(object):
         self._mumps_c(ctypes.byref(self.struct))
 
         if self.struct.infog[0] < 0:
-            raise RuntimeError('MUMPS error: {self.struct.infog[0]}')
+            raise RuntimeError(f'MUMPS error: {self.struct.infog[0]}')
 
     def solve(self, b=None):
         """Solve the linear system.
