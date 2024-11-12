@@ -56,3 +56,4 @@ Tested for the following MUMPS library versions:
 * 5.1.2
 * 5.2.1
 * 5.4.1
+* 5.6.1
