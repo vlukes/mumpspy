@@ -36,14 +36,14 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Create NOK badge
-      uses: RubbaBoy/BYOB@v1.3.0
-      with:
-        NAME: Macos-${{ matrix.python-version }}_${{ matrix.mumps-version }}
-        STATUS: NOK
-        ICON: '🔧'
-        COLOR: FF1100
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # - name: Create NOK badge
+    #   uses: RubbaBoy/BYOB@v1.3.0
+    #   with:
+    #     NAME: Ubuntu_${{ matrix.python-version }}_${{ matrix.mumps-version }}
+    #     STATUS: NOK
+    #     ICON: '🔧'
+    #     COLOR: FF1100
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Install the dependences
       run: |              
@@ -97,12 +97,12 @@ jobs:
     # - name: Generate Coverage Report  
     #   run: |  
     #     coverage report -m
-    - name: Create OK badge
-      uses: RubbaBoy/BYOB@v1.3.0
-      with:
-        NAME: ${{ matrix.python-version }}_${{ matrix.mumps-version }}
-        STATUS: OK
-        ICON: '🔧'
-        COLOR: 00FF00
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # - name: Create OK badge
+    #   uses: RubbaBoy/BYOB@v1.3.0
+    #   with:
+    #     NAME: Ubuntu_${{ matrix.python-version }}_${{ matrix.mumps-version }}
+    #     STATUS: OK
+    #     ICON: '🔧'
+    #     COLOR: 00FF00
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
