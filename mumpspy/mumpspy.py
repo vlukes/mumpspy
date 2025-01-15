@@ -3,31 +3,36 @@ from mpi4py import MPI
 import numpy as nm
 import re
 from .mumps_lib_c_struc import (define_mumps_c_struc, c_pointer,
-                                PMumpsComplex, PMumpsInt)
+                                PMumpsComplex, PMumpsComplex16, PMumpsInt)
 
 
 def load_library(libname):
     """Load the shared library in a system dependent way."""
     import sys
 
-    if sys.platform.startswith('win'):  # Windows system
+    if sys.platform.startswith('win') or sys.platform.startswith('darwin'):  # Windows system
         from ctypes.util import find_library
 
         lib_fname = find_library(libname)
         if lib_fname is None:
             lib_fname = find_library('lib' + libname)
-
+    
     else:  # Linux system
         lib_fname = 'lib' + libname + '.so'
 
-    lib = ctypes.cdll.LoadLibrary(lib_fname)
+    if lib_fname is None:
+        return None
+    else:
+        lib = ctypes.cdll.LoadLibrary(lib_fname)
+        return getattr(lib, libname + '_c')
 
-    return lib
 
 
 mumps_libs = {
-    'dmumps': load_library('dmumps').dmumps_c,
-    'zmumps': load_library('zmumps').zmumps_c,
+    'dmumps': load_library('dmumps'), # float64
+    'zmumps': load_library('zmumps'), # complex128
+    'smumps': load_library('smumps'), # float32
+    'cmumps': load_library('cmumps'), # complex64
 }
 
 
@@ -64,7 +69,8 @@ def get_lib_version():
 
 mumps_lib_version = get_lib_version()
 
-mumps_c_struc = define_mumps_c_struc(mumps_lib_version)
+mumps_c_struc_single = define_mumps_c_struc(mumps_lib_version, precision='single')
+mumps_c_struc_double = define_mumps_c_struc(mumps_lib_version, precision='double')
 
 
 class MumpsSolver(object):
@@ -73,7 +79,7 @@ class MumpsSolver(object):
     def __init__(self, is_sym=False, mpi_comm=None,
                  system='real', silent=True, mem_relax=20):
         """
-        Init the MUMUPS solver.
+        Init the MUMPS solver.
 
         Parameters
         ----------
@@ -89,21 +95,46 @@ class MumpsSolver(object):
             The percentage increase in the estimated working space
         """
         self.struct = None
-
-        if system == 'real':
+        if system in ('real','float', 'float64', 'real64', 'double', nm.float64):
             self._mumps_c = mumps_libs['dmumps']
             self.dtype = nm.float64
-        elif system == 'complex':
+            self.pointermumpstype = PMumpsComplex16
+            self.system = 'real64'
+            # mumps_c_struc = define_mumps_c_struc(mumps_lib_version,precision='double')
+        elif system in ('float32','real32','single', nm.float32):
+            self._mumps_c = mumps_libs['smumps']
+            self.dtype = nm.float32
+            self.pointermumpstype = PMumpsComplex
+            self.system = 'real32'
+            # mumps_c_struc = define_mumps_c_struc(mumps_lib_version,precision='single')
+        elif system in ('complex', 'complex128', nm.complex128):
             self._mumps_c = mumps_libs['zmumps']
             self.dtype = nm.complex128
+            self.pointermumpstype = PMumpsComplex16
+            self.system = 'complex128'
+            # mumps_c_struc = define_mumps_c_struc(mumps_lib_version,precision='double')
+        elif system in ('complex64', nm.complex64):
+            self._mumps_c = mumps_libs['cmumps']
+            self.dtype = nm.complex64
+            self.pointermumpstype = PMumpsComplex
+            self.system = 'complex64'
+            # mumps_c_struc = define_mumps_c_struc(mumps_lib_version,precision='single')
+        else:
+            raise ValueError('Unknown precision type!')
+        # manage unavailable library
+        if self._mumps_c is None:
+            raise ValueError(f'MUMPS library for precision {system} is not available (consider reinstalling the appropriate library in the right place)')
 
         self.mpi_comm = MPI.COMM_WORLD if mpi_comm is None else mpi_comm
         self._mumps_c.restype = None
 
         # init mumps library
-        self._mumps_c.argtypes = [c_pointer(mumps_c_struc)]
-
-        self.struct = mumps_c_struc()
+        if self.system in ('real64', 'complex128'):
+            self._mumps_c.argtypes = [c_pointer(mumps_c_struc_double)]
+            self.struct = mumps_c_struc_double()
+        elif self.system in ('real32', 'complex64'):
+            self._mumps_c.argtypes = [c_pointer(mumps_c_struc_single)]
+            self.struct = mumps_c_struc_single()
         self.struct.par = 1
         self.struct.sym = 2 if is_sym else 0
         self.struct.n = 0
@@ -190,7 +221,7 @@ class MumpsSolver(object):
             self.struct.nnz = ir.shape[0]
         self.struct.irn = ir.ctypes.data_as(PMumpsInt)
         self.struct.jcn = ic.ctypes.data_as(PMumpsInt)
-        self.struct.a = data.ctypes.data_as(PMumpsComplex)
+        self.struct.a = data.ctypes.data_as(self.pointermumpstype)
 
         if factorize:
             self._mumps_call(4)
@@ -206,7 +237,7 @@ class MumpsSolver(object):
             raise ValueError(msg)
 
         self._data.update(rhs=rhs)
-        self.struct.rhs = rhs.ctypes.data_as(PMumpsComplex)
+        self.struct.rhs = rhs.ctypes.data_as(self.pointermumpstype)
         self.struct.lrhs = rhs.shape[0]
 
         if len(rhs.shape) == 1:
@@ -248,7 +279,7 @@ class MumpsSolver(object):
 
         self.struct.size_schur = schur_size
         self.struct.listvar_schur = schur_list.ctypes.data_as(PMumpsInt)
-        self.struct.schur = schur_arr.ctypes.data_as(PMumpsComplex)
+        self.struct.schur = schur_arr.ctypes.data_as(self.pointermumpstype)
 
         # get matrix
         self.struct.schur_lld = schur_size
@@ -288,7 +319,7 @@ class MumpsSolver(object):
         schur_rhs = nm.empty((schur_size, nrhs), dtype=self.dtype, order='F')
         self._schur_rhs = schur_rhs
         self.struct.lredrhs = schur_size
-        self.struct.redrhs = schur_rhs.ctypes.data_as(PMumpsComplex)
+        self.struct.redrhs = schur_rhs.ctypes.data_as(self.pointermumpstype)
 
         # get reduced/condensed RHS
         self.struct.icntl[25] = 1  # Reduction/condensation phase
