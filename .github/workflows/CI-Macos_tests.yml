@@ -38,8 +38,8 @@ jobs:
     
     - name: Install the dependences
       run: |              
-        # install ubuntu package
-        brew install scotch metis open-mpi cmake gcc
+        # install macos packages
+        brew install scotch metis open-mpi cmake gcc gfortran
         # update pip
         python -m pip install --upgrade pip
     
