@@ -42,6 +42,8 @@ jobs:
         brew install scotch metis open-mpi cmake gcc gfortran
         # update pip
         python -m pip install --upgrade pip
+        #
+        which gfortran
     
     - name: Prepare folders and set variables
       run: |
