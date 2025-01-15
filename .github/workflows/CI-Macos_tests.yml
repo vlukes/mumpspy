@@ -75,7 +75,7 @@ jobs:
         echo $TMP_FOLDER_MUMPS_SRC 
         cd $TMP_FOLDER_MUMPS_SRC
         # generate building for library using cmake 
-        cmake -Bbuild -DBUILD_SINGLE=on -DBUILD_DOUBLE=on -DBUILD_COMPLEX=on -DBUILD_COMPLEX16=on -DMUMPS_parallel=no -DBUILD_SHARED_LIBS=on -DMUMPS_UPSTREAM_VERSION=${{ matrix.mumps-version }} --install-prefix=${BASE_DATA_PYTHON}
+        cmake -Bbuild -DBUILD_SINGLE=on -DBUILD_DOUBLE=on -DBUILD_COMPLEX=on -DBUILD_COMPLEX16=on -DMUMPS_parallel=no -DBUILD_SHARED_LIBS=on -DMUMPS_UPSTREAM_VERSION=${{ matrix.mumps-version }} --install-prefix=/usr/local/ #${BASE_DATA_PYTHON}
         # build library using cmake
         cmake --build build -j20
         # install library using cmake
