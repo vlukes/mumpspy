@@ -26,6 +26,9 @@ jobs:
         python-version: [3.8, 3.9, '3.10', '3.11', '3.12', '3.13']
         mumps-version: [5.4.1, 5.5.0, 5.5.1, 5.6.0, 5.6.1, 5.6.2, 5.7.0, 5.7.1, 5.7.2, 5.7.3 ] 
         #5.4.0 is not available
+    env:
+      FC: gfortran
+      GCC_V: 12
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -42,9 +45,13 @@ jobs:
         brew install scotch metis open-mpi cmake gcc
         # update pip
         python -m pip install --upgrade pip
-        #
-        ln -s /usr/local/bin/gfortran-14 /usr/local/bin/gfortran
-        gfortran --version
+        # make sure gfortran is available
+        # https://github.com/actions/runner-images/blob/main/images/macos/macos-15-Readme.md
+        # https://github.com/actions/runner-images/issues/3371
+        # ln version - new path 'MacOS14'
+        sudo ln -fs /opt/homebrew/bin/gfortran-${GCC_V} /usr/local/bin/gfortran
+        sudo mkdir -p /usr/local/gfortran
+        sudo ln -sf /opt/homebrew/Cellar/gcc@${GCC_V}/*/lib/gcc/${GCC_V} /usr/local/gfortran/lib
     
     - name: Prepare folders and set variables
       run: |
