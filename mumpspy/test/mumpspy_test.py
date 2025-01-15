@@ -91,7 +91,7 @@ def testRealRCDsym(precision):
     # load data
     data = loadSystem(name="real-sym")
     #
-    solver = mumpspy.MumpsSolver(silent=False, system=precision)
+    solver = mumpspy.MumpsSolver(system=precision)
     solver.set_rcd_mtx(data["ridx"], data["cidx"], data["val"], 4)
     solver.set_rhs(data["b"])  # b will be overwritten!
     x = solver.solve()  # x is b: True
@@ -108,7 +108,7 @@ def testRealMatrixsym(precision):
     # load data
     data = loadSystem(name="real-sym")
     #
-    solver = mumpspy.MumpsSolver(is_sym=True, silent=False, system=precision)
+    solver = mumpspy.MumpsSolver(is_sym=True, system=precision)
     solver.set_mtx(data["A"])
     x = solver.solve(data["b"])
     del solver
