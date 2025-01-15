@@ -19,7 +19,7 @@ description="MUMPS for Python"
 license = {file = "LICENSE"}
 authors = [{name = "Vladimír Lukeš", email = "vlukes@kme.zcu.cz"}]
 requires-python = ">= 3.8"
-dependencies = ["mpi4py", "numpy"]
+dependencies = ["mpi4py", "numpy", "pytest", "scipy"]
 keywords = ["sparse", "solver"]
 classifiers = [
     "Development Status :: 4 - Beta",  # 3 - Alpha, 4 - Beta, 5 - Stable
