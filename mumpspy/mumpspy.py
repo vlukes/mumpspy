@@ -28,6 +28,7 @@ def load_library(libname):
         lib_fname = "lib" + libname + ".so"
 
     if lib_fname is None:
+        print('Library "{}" not found!'.format(libname))
         return None
     else:
         lib = ctypes.cdll.LoadLibrary(lib_fname)
