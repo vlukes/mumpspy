@@ -43,6 +43,7 @@ jobs:
         # update pip
         python -m pip install --upgrade pip
         #
+        ln -s /usr/local/bin/gfortran-14 /usr/local/bin/gfortran
         gfortran --version
     
     - name: Prepare folders and set variables
