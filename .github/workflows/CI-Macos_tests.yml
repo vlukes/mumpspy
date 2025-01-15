@@ -1,6 +1,6 @@
 # This is a basic workflow to tests all preset MUMPS versions with mumpspy
 
-name: CI-tests
+name: CI-MacOS_tests
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -19,7 +19,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
@@ -39,8 +39,7 @@ jobs:
     - name: Install the dependences
       run: |              
         # install ubuntu package
-        sudo apt-get update
-        sudo apt-get install -yy build-essential wget cmake gcc g++ gfortran libblas-dev liblapack-dev libopenmpi-dev
+        brew install scotch metis open-mpi cmake gcc
         # update pip
         python -m pip install --upgrade pip
     
