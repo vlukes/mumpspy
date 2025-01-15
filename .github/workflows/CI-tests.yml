@@ -84,7 +84,7 @@ jobs:
         python -c "from mumpspy import mumpspy;print(mumpspy.get_lib_version())"
     - name: Test with pytest  
       run: |  
-        python -m pytest  -v -s -n1
+        coverage run -m pytest  -v -s -n1
     - name: Generate Coverage Report  
       run: |  
         coverage report -m
