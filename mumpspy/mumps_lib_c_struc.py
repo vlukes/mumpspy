@@ -7,6 +7,15 @@ AUX_LENGTH = 16 * 1024
 
 c_pointer = ctypes.POINTER
 
+## define structures for complex numbers
+class complex8(ctypes.Structure):
+    _fields_ = [("r", ctypes.c_float),
+                ("i", ctypes.c_float)]
+class complex16(ctypes.Structure):
+    _fields_ = [("r", ctypes.c_double),
+                ("i", ctypes.c_double)]
+
+
 MumpsInt = ctypes.c_int
 PMumpsInt = c_pointer(MumpsInt)
 MumpsInt8 = ctypes.c_uint64
@@ -14,12 +23,13 @@ PMumpsInt8 = c_pointer(MumpsInt8)
 MumpsReal = ctypes.c_float
 PMumpsReal = c_pointer(MumpsReal)
 MumpsComplex = MumpsReal
-PMumpsComplex = c_pointer(MumpsComplex)
-MumpsReal8 = ctypes.c_double
+PMumpsComplex = c_pointer(MumpsComplex) # BAD approach but it works beacause using pointers in the next part 
+MumpsReal8 = complex8 #ctypes.c_double
 PMumpsReal8 = c_pointer(MumpsReal8)
-MumpsComplex16 = MumpsReal8
-PMumpsComplex16 = c_pointer(MumpsComplex16)
+MumpsComplex16 = complex16 #MumpsReal8
+PMumpsComplex16 = c_pointer(MumpsComplex16) # BAD approach but it works beacause using pointers in the next part 
 
+## see definition of structure: https://stackoverflow.com/questions/24640817/python-ctypes-definition-for-c-struct
 
 def get_all_fields(precision="double"):
     """Get all declared and updated fields for MUMPS C structure for a given precision.
