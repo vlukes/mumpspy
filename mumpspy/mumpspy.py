@@ -201,6 +201,10 @@ class MumpsSolver(object):
         """
         assert mtx.shape[0] == mtx.shape[1]
 
+        # convert to coo
+        if not hasattr(mtx, "row"):
+            mtx = mtx.tocoo()
+
         rr = mtx.row + 1
         cc = mtx.col + 1
         data = mtx.data
@@ -220,9 +224,9 @@ class MumpsSolver(object):
         Parameters
         ----------
         ir : array
-            Row idicies
+            Row indices
         ic : array
-            Column idicies
+            Column indices
         data : array
             Matrix entries
         n : int
@@ -421,6 +425,9 @@ class MumpsSolver(object):
             self(6)
 
         return self._data["rhs"]
+    
+    # duplicate method
+    spsolve = solve
 
     def schur_solve(self, schur_list, b=None):
         """Solve the linear system using the Schur complement method.
