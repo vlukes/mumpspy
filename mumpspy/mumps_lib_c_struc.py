@@ -1,3 +1,8 @@
+## file built from headers (include directory) of MUMPS library
+## tools that can be used: ctypesgen (pip install ctypesgen)
+## on include folder: run for file in `ls *.h`;do ctypesgen -l${file%.*} $file -o ${file%.*}.py;done
+
+
 import ctypes
 
 MIN_SUPPORTED_VERSION = "4.10.0"
@@ -20,44 +25,60 @@ MumpsInt = ctypes.c_int
 PMumpsInt = c_pointer(MumpsInt)
 MumpsInt8 = ctypes.c_uint64
 PMumpsInt8 = c_pointer(MumpsInt8)
+#
 MumpsReal = ctypes.c_float
 PMumpsReal = c_pointer(MumpsReal)
-MumpsComplex = MumpsReal
-PMumpsComplex = c_pointer(MumpsComplex) # BAD approach but it works beacause using pointers in the next part 
-MumpsReal8 = complex8 #ctypes.c_double
+#
+MumpsComplex = complex8
+PMumpsComplex = c_pointer(MumpsComplex) 
+#
+MumpsReal8 = ctypes.c_double
 PMumpsReal8 = c_pointer(MumpsReal8)
+#
 MumpsComplex16 = complex16 #MumpsReal8
-PMumpsComplex16 = c_pointer(MumpsComplex16) # BAD approach but it works beacause using pointers in the next part 
+PMumpsComplex16 = c_pointer(MumpsComplex16) 
+#
 
-## see definition of structure: https://stackoverflow.com/questions/24640817/python-ctypes-definition-for-c-struct
 
-def get_all_fields(precision="double"):
+def get_all_fields(mumps_type="d"):
     """Get all declared and updated fields for MUMPS C structure for a given precision.
 
     Args:
-        precision (str, optional): request precision (single or double) for real or complex. Defaults to 'double'.
+        mumps_type (str, optional): MUMPS type letter (s, d, c, z). Defaults to 'd'.
 
     Returns:
         mumps_c_fields: basics fields for MUMPS C structure
         mumps_c_updates: incremental updates for MUMPS C structure
     """
-
     cMumpsInt = MumpsInt
     cPMumpsInt = PMumpsInt
     cMumpsInt8 = MumpsInt8
     cPMumpsInt8 = PMumpsInt8
-    if precision == "single":
-        cMumpsReal = MumpsReal
-        cPMumpsReal = PMumpsReal
-        cMumpsComplex = MumpsComplex
-        cPMumpsComplex = PMumpsComplex
-    elif precision == "double":
-        cMumpsReal = MumpsReal8
-        cPMumpsReal = PMumpsReal8
-        cMumpsComplex = MumpsComplex16
-        cPMumpsComplex = PMumpsComplex16
+
+    # adapt type to precision
+    if mumps_type.startswith("s"):
+        cTypeData = MumpsReal
+        cPTypeData = PMumpsReal
+        cTypeDataReal = MumpsReal
+        cPTypeDataReal = PMumpsReal
+    elif mumps_type.startswith("d"):
+        cTypeData = MumpsReal8
+        cPTypeData = PMumpsReal8
+        cTypeDataReal = MumpsReal8
+        cPTypeDataReal = PMumpsReal8
+    elif mumps_type.startswith("c"):
+        cTypeData = MumpsComplex
+        cPTypeData = PMumpsComplex
+        cTypeDataReal = MumpsReal
+        cPTypeDataReal = PMumpsReal
+    elif mumps_type.startswith("z"):
+        cTypeData = MumpsComplex16
+        cPTypeData = PMumpsComplex16
+        cTypeDataReal = MumpsReal8
+        cPTypeDataReal = PMumpsReal8
     else:
-        raise ValueError(f"Precision {precision} not supported!")
+        raise ValueError(f"Precision {mumps_type} not supported!")
+
     #
 
     mumps_c_fields = [  # MUMPS 4.10.0
@@ -66,7 +87,7 @@ def get_all_fields(precision="double"):
         ("job", cMumpsInt),
         ("comm_fortran", cMumpsInt),
         ("icntl", cMumpsInt * 40),
-        ("cntl", cMumpsReal * 15),
+        ("cntl", cTypeDataReal * 15),
         ("n", cMumpsInt),
         #
         ("nz_alloc", cMumpsInt),
@@ -74,30 +95,30 @@ def get_all_fields(precision="double"):
         ("nz", cMumpsInt),
         ("irn", cPMumpsInt),
         ("jcn", cPMumpsInt),
-        ("a", cPMumpsComplex),
+        ("a", cPTypeData),
         # /* Distributed entry */
         ("nz_loc", cMumpsInt),
         ("irn_loc", cPMumpsInt),
         ("jcn_loc", cPMumpsInt),
-        ("a_loc", cPMumpsComplex),
+        ("a_loc", cPTypeData),
         # /* Element entry */
         ("nelt", cMumpsInt),
         ("eltptr", cPMumpsInt),
         ("eltvar", cPMumpsInt),
-        ("a_elt", cPMumpsComplex),
+        ("a_elt", cPTypeData),
         # /* Ordering, if given by user */
         ("perm_in", cPMumpsInt),
         # /* Orderings returned to user */
         ("sym_perm", cPMumpsInt),
         ("uns_perm", cPMumpsInt),
         # /* Scaling (input only in this version) */
-        ("colsca", cPMumpsReal),
-        ("rowsca", cPMumpsReal),
+        ("colsca", cPTypeDataReal),
+        ("rowsca", cPTypeDataReal),
         # /* RHS, solution, ouptput data and statistics */
-        ("rhs", cPMumpsComplex),
-        ("redrhs", cPMumpsComplex),
-        ("rhs_sparse", cPMumpsComplex),
-        ("sol_loc", cPMumpsComplex),
+        ("rhs", cPTypeData),
+        ("redrhs", cPTypeData),
+        ("rhs_sparse", cPTypeData),
+        ("sol_loc", cPTypeData),
         ("irhs_sparse", cPMumpsInt),
         ("irhs_ptr", cPMumpsInt),
         ("isol_loc", cPMumpsInt),
@@ -115,8 +136,8 @@ def get_all_fields(precision="double"):
         ("npcol", cMumpsInt),
         ("info", cMumpsInt * 40),
         ("infog", cMumpsInt * 40),
-        ("rinfo", cMumpsReal * 40),
-        ("rinfog", cMumpsReal * 40),
+        ("rinfo", cPTypeDataReal * 40),
+        ("rinfog", cPTypeDataReal * 40),
         # /* Null space */
         ("deficiency", cMumpsInt),
         ("pivnul_list", cPMumpsInt),
@@ -124,10 +145,10 @@ def get_all_fields(precision="double"):
         # /* Schur */
         ("size_schur", cMumpsInt),
         ("listvar_schur", cPMumpsInt),
-        ("schur", cPMumpsComplex),
+        ("schur", cPTypeData),
         # /* Internal parameters */
         ("instance_number", cMumpsInt),
-        ("wk_user", cPMumpsComplex),
+        ("wk_user", cPTypeData),
         # /* Version number:
         #  length in FORTRAN + 1 for final \0 + 1 for alignment */
         ("version_number", ctypes.c_char * 16),
@@ -146,7 +167,7 @@ def get_all_fields(precision="double"):
                 "new_after",
                 "cntl",
                 [
-                    ("dkeep", cMumpsReal * 130),
+                    ("dkeep", cTypeDataReal * 130),
                     ("keep8", cMumpsInt8 * 150),
                 ],
             ),
@@ -161,7 +182,7 @@ def get_all_fields(precision="double"):
             ("replace", "version_number", ctypes.c_char * 27),
         ],
         "5.1.0": [
-            ("replace", "dkeep", cMumpsReal * 230),
+            ("replace", "dkeep", cTypeDataReal * 230),
             ("new_after", "nz", ("nnz", cMumpsInt8)),
             ("new_after", "nz_loc", ("nnz_loc", cMumpsInt8)),
             ("replace", "version_number", ctypes.c_char * 32),
@@ -177,7 +198,7 @@ def get_all_fields(precision="double"):
         ],
         "5.2.0": [
             ("replace", "icntl", cMumpsInt * 60),
-            ("new_after", "sol_loc", ("rhs_loc", cPMumpsComplex)),
+            ("new_after", "sol_loc", ("rhs_loc", cPTypeData)),
             ("new_after", "isol_loc", ("irhs_loc", cPMumpsInt)),
             (
                 "new_after",
@@ -204,8 +225,25 @@ def get_all_fields(precision="double"):
             ),
         ],
         "5.7.0": [
+            ("new_after", "rowsca_from_mumps", 
+                [
+                    ("colsca_loc", cPTypeDataReal),
+                    ("rowsca_loc", cPTypeDataReal),
+                    ("rowind", cPMumpsInt),
+                    ("colind", cPMumpsInt),
+                    ("pivots", cPTypeData)
+                ]
+            ),
+            ("new_after", "rhs_loc", ("rhsintr", cPTypeData)),
+            ("new_after", "irhs_loc", 
+                [
+                    ("glob2loc_rhs", cPMumpsInt),
+                    ("glob2loc_sol", cPMumpsInt)
+                ]
+            ),
+            ("new_after", "lrhs_loc", ("nsol_loc", cMumpsInt)),
             ("new_after", "npcol", ("ld_rhsintr", cMumpsInt)),
-            ("new_after", "mapping", ("singular_values", cPMumpsReal)),
+            ("new_after", "mapping", ("singular_values", cPTypeDataReal)),
             ("delete", "instance_number"),
             ("replace", "ooc_tmpdir", ctypes.c_char * 1024),
             ("replace", "ooc_prefix", ctypes.c_char * 256),
@@ -223,7 +261,7 @@ def version_to_int(v):
     return sum(int(vk) * 10 ** (3 * k) for k, vk in enumerate(v.split(".")[::-1]))
 
 
-def get_mumps_c_fields(version=None, precision="double"):
+def get_mumps_c_fields(version=None, mumps_type='d'):
     """Return the MUMPS C fields for a given MUMPS version."""
 
     def update_fields(f, update_f):
@@ -243,7 +281,7 @@ def get_mumps_c_fields(version=None, precision="double"):
 
         return f
 
-    mumps_c_fields, mumps_c_updates = get_all_fields(precision=precision)
+    mumps_c_fields, mumps_c_updates = get_all_fields(mumps_type=mumps_type)
 
     if version is None:
         fields = mumps_c_fields[:5] + [("aux", ctypes.c_uint8 * AUX_LENGTH)]
@@ -276,10 +314,10 @@ def get_mumps_c_fields(version=None, precision="double"):
     return fields
 
 
-def define_mumps_c_struc(version=None, precision="double"):
+def define_mumps_c_struc(version=None, mumps_type='d'):
     """Return MUMPS_C_STRUC class with given fields."""
 
     class Mumps_c_struc(ctypes.Structure):
-        _fields_ = get_mumps_c_fields(version, precision=precision)
+        _fields_ = get_mumps_c_fields(version, mumps_type=mumps_type)
 
     return Mumps_c_struc

@@ -5,6 +5,8 @@ import re
 from .mumps_lib_c_struc import (
     define_mumps_c_struc,
     c_pointer,
+    PMumpsReal,
+    PMumpsReal8,
     PMumpsComplex,
     PMumpsComplex16,
     PMumpsInt,
@@ -76,8 +78,10 @@ def get_lib_version():
 
 mumps_lib_version = get_lib_version()
 
-mumps_c_struc_single = define_mumps_c_struc(mumps_lib_version, precision="single")
-mumps_c_struc_double = define_mumps_c_struc(mumps_lib_version, precision="double")
+mumps_c_struc_real_single = define_mumps_c_struc(mumps_lib_version, mumps_type="s")
+mumps_c_struc_real_double = define_mumps_c_struc(mumps_lib_version, mumps_type="d")
+mumps_c_struc_complex_single = define_mumps_c_struc(mumps_lib_version, mumps_type="c")
+mumps_c_struc_complex_double = define_mumps_c_struc(mumps_lib_version, mumps_type="z")
 
 
 class MumpsSolver(object):
@@ -106,13 +110,13 @@ class MumpsSolver(object):
         if system in ("real", "float", "float64", "real64", "double", nm.float64):
             self._mumps_c = mumps_libs["dmumps"]
             self.dtype = nm.float64
-            self.pointermumpstype = PMumpsComplex16
+            self.pointermumpstype = PMumpsReal8
             self.system = "real64"
             # mumps_c_struc = define_mumps_c_struc(mumps_lib_version,precision='double')
         elif system in ("float32", "real32", "single", nm.float32):
             self._mumps_c = mumps_libs["smumps"]
             self.dtype = nm.float32
-            self.pointermumpstype = PMumpsComplex
+            self.pointermumpstype = PMumpsReal
             self.system = "real32"
             # mumps_c_struc = define_mumps_c_struc(mumps_lib_version,precision='single')
         elif system in ("complex", "complex128", nm.complex128):
@@ -139,12 +143,18 @@ class MumpsSolver(object):
         self._mumps_c.restype = None
 
         # init mumps library
-        if self.system in ("real64", "complex128"):
-            self._mumps_c.argtypes = [c_pointer(mumps_c_struc_double)]
-            self.struct = mumps_c_struc_double()
-        elif self.system in ("real32", "complex64"):
-            self._mumps_c.argtypes = [c_pointer(mumps_c_struc_single)]
-            self.struct = mumps_c_struc_single()
+        if self.system in ("real64"):
+            self._mumps_c.argtypes = [c_pointer(mumps_c_struc_real_double)]
+            self.struct = mumps_c_struc_real_double()
+        elif self.system in ("real32"):
+            self._mumps_c.argtypes = [c_pointer(mumps_c_struc_real_single)]
+            self.struct = mumps_c_struc_real_single()
+        elif self.system in ("complex128"):
+            self._mumps_c.argtypes = [c_pointer(mumps_c_struc_complex_double)]
+            self.struct = mumps_c_struc_complex_double()
+        elif self.system in ("complex64"):
+            self._mumps_c.argtypes = [c_pointer(mumps_c_struc_complex_single)]
+            self.struct = mumps_c_struc_complex_single()
         self.struct.par = 1
         self.struct.sym = 2 if is_sym else 0
         self.struct.n = 0

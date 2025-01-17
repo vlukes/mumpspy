@@ -221,7 +221,7 @@ def testComplexMatrixsymSchur(precision):
     # load data
     data = loadSystem(name="real-sym")
     #
-    solver = mumpspy.MumpsSolver(system=precision)
+    solver = mumpspy.MumpsSolver(system=precision, silent=False)
     solver.set_mtx(data["A"], factorize=False)
     x = solver.schur_solve(data["schur_list"], data["b"])
     del solver
