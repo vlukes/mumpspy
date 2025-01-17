@@ -136,8 +136,8 @@ def get_all_fields(mumps_type="d"):
         ("npcol", cMumpsInt),
         ("info", cMumpsInt * 40),
         ("infog", cMumpsInt * 40),
-        ("rinfo", cPTypeDataReal * 40),
-        ("rinfog", cPTypeDataReal * 40),
+        ("rinfo", cTypeDataReal * 40),
+        ("rinfog", cTypeDataReal * 40),
         # /* Null space */
         ("deficiency", cMumpsInt),
         ("pivnul_list", cPMumpsInt),
