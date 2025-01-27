@@ -2,32 +2,46 @@ import ctypes
 from mpi4py import MPI
 import numpy as nm
 import re
-from .mumps_lib_c_struc import (define_mumps_c_struc, c_pointer,
-                                PMumpsComplex, PMumpsInt)
+from .mumps_lib_c_struc import (
+    define_mumps_c_struc,
+    c_pointer,
+    PMumpsReal,
+    PMumpsReal8,
+    PMumpsComplex,
+    PMumpsComplex16,
+    PMumpsInt,
+)
 
 
 def load_library(libname):
     """Load the shared library in a system dependent way."""
     import sys
 
-    if sys.platform.startswith('win'):  # Windows system
+    if sys.platform.startswith("win") or sys.platform.startswith(
+        "darwin"
+    ):  # Windows system
         from ctypes.util import find_library
 
         lib_fname = find_library(libname)
         if lib_fname is None:
-            lib_fname = find_library('lib' + libname)
+            lib_fname = find_library("lib" + libname)
 
     else:  # Linux system
-        lib_fname = 'lib' + libname + '.so'
+        lib_fname = "lib" + libname + ".so"
 
-    lib = ctypes.cdll.LoadLibrary(lib_fname)
-
-    return lib
+    if lib_fname is None:
+        print('Library "{}" not found!'.format(libname))
+        return None
+    else:
+        lib = ctypes.cdll.LoadLibrary(lib_fname)
+        return getattr(lib, libname + "_c")
 
 
 mumps_libs = {
-    'dmumps': load_library('dmumps').dmumps_c,
-    'zmumps': load_library('zmumps').zmumps_c,
+    "dmumps": load_library("dmumps"),  # float64
+    "zmumps": load_library("zmumps"),  # complex128
+    "smumps": load_library("smumps"),  # float32
+    "cmumps": load_library("cmumps"),  # complex64
 }
 
 
@@ -40,16 +54,16 @@ def get_lib_version():
     struct.comm_fortran = MPI.COMM_WORLD.py2f()
     struct.job = -1  # init package instance
 
-    mumps_c = mumps_libs['dmumps']
+    mumps_c = mumps_libs["dmumps"]
     mumps_c.restype = None
     mumps_c.argtypes = [c_pointer(aux_mumps_c_struc)]
     mumps_c(ctypes.byref(struct))
 
     arr = nm.ctypeslib.as_array(struct.aux)
-    idxs = nm.logical_and(arr >= ord('.'), arr <= ord('9'))
-    s = (arr[idxs].tobytes()).decode('utf-8')
-    vnums = re.findall(r'^.*(\d)\.(\d+)\.(\d+).*$', s)[-1]
-    version = '.'.join(vnums)
+    idxs = nm.logical_and(arr >= ord("."), arr <= ord("9"))
+    s = (arr[idxs].tobytes()).decode("utf-8")
+    vnums = re.findall(r"^.*(\d)\.(\d+)\.(\d+).*$", s)[-1]
+    version = ".".join(vnums)
 
     struct.job = -2  # terminate package instance
     struct.icntl[0] = -1  # suppress error messages
@@ -64,16 +78,20 @@ def get_lib_version():
 
 mumps_lib_version = get_lib_version()
 
-mumps_c_struc = define_mumps_c_struc(mumps_lib_version)
+mumps_c_struc_real_single = define_mumps_c_struc(mumps_lib_version, mumps_type="s")
+mumps_c_struc_real_double = define_mumps_c_struc(mumps_lib_version, mumps_type="d")
+mumps_c_struc_complex_single = define_mumps_c_struc(mumps_lib_version, mumps_type="c")
+mumps_c_struc_complex_double = define_mumps_c_struc(mumps_lib_version, mumps_type="z")
 
 
 class MumpsSolver(object):
     """MUMPS object."""
 
-    def __init__(self, is_sym=False, mpi_comm=None,
-                 system='real', silent=True, mem_relax=20):
+    def __init__(
+        self, is_sym=False, mpi_comm=None, system="real", silent=True, mem_relax=20
+    ):
         """
-        Init the MUMUPS solver.
+        Init the MUMPS solver.
 
         Parameters
         ----------
@@ -89,21 +107,54 @@ class MumpsSolver(object):
             The percentage increase in the estimated working space
         """
         self.struct = None
-
-        if system == 'real':
-            self._mumps_c = mumps_libs['dmumps']
+        if system in ("real", "float", "float64", "real64", "double", nm.float64):
+            self._mumps_c = mumps_libs["dmumps"]
             self.dtype = nm.float64
-        elif system == 'complex':
-            self._mumps_c = mumps_libs['zmumps']
+            self.pointermumpstype = PMumpsReal8
+            self.system = "real64"
+            # mumps_c_struc = define_mumps_c_struc(mumps_lib_version,precision='double')
+        elif system in ("float32", "real32", "single", nm.float32):
+            self._mumps_c = mumps_libs["smumps"]
+            self.dtype = nm.float32
+            self.pointermumpstype = PMumpsReal
+            self.system = "real32"
+            # mumps_c_struc = define_mumps_c_struc(mumps_lib_version,precision='single')
+        elif system in ("complex", "complex128", nm.complex128):
+            self._mumps_c = mumps_libs["zmumps"]
             self.dtype = nm.complex128
+            self.pointermumpstype = PMumpsComplex16
+            self.system = "complex128"
+            # mumps_c_struc = define_mumps_c_struc(mumps_lib_version,precision='double')
+        elif system in ("complex64", nm.complex64):
+            self._mumps_c = mumps_libs["cmumps"]
+            self.dtype = nm.complex64
+            self.pointermumpstype = PMumpsComplex
+            self.system = "complex64"
+            # mumps_c_struc = define_mumps_c_struc(mumps_lib_version,precision='single')
+        else:
+            raise ValueError("Unknown precision type!")
+        # manage unavailable library
+        if self._mumps_c is None:
+            raise ValueError(
+                f"MUMPS library for precision {system} is not available (consider reinstalling the appropriate library in the right place)"
+            )
 
         self.mpi_comm = MPI.COMM_WORLD if mpi_comm is None else mpi_comm
         self._mumps_c.restype = None
 
         # init mumps library
-        self._mumps_c.argtypes = [c_pointer(mumps_c_struc)]
-
-        self.struct = mumps_c_struc()
+        if self.system in ("real64"):
+            self._mumps_c.argtypes = [c_pointer(mumps_c_struc_real_double)]
+            self.struct = mumps_c_struc_real_double()
+        elif self.system in ("real32"):
+            self._mumps_c.argtypes = [c_pointer(mumps_c_struc_real_single)]
+            self.struct = mumps_c_struc_real_single()
+        elif self.system in ("complex128"):
+            self._mumps_c.argtypes = [c_pointer(mumps_c_struc_complex_double)]
+            self.struct = mumps_c_struc_complex_double()
+        elif self.system in ("complex64"):
+            self._mumps_c.argtypes = [c_pointer(mumps_c_struc_complex_single)]
+            self.struct = mumps_c_struc_complex_single()
         self.struct.par = 1
         self.struct.sym = 2 if is_sym else 0
         self.struct.n = 0
@@ -150,6 +201,10 @@ class MumpsSolver(object):
         """
         assert mtx.shape[0] == mtx.shape[1]
 
+        # convert to coo
+        if not hasattr(mtx, "row"):
+            mtx = mtx.tocoo()
+
         rr = mtx.row + 1
         cc = mtx.col + 1
         data = mtx.data
@@ -169,9 +224,9 @@ class MumpsSolver(object):
         Parameters
         ----------
         ir : array
-            Row idicies
+            Row indices
         ic : array
-            Column idicies
+            Column indices
         data : array
             Matrix entries
         n : int
@@ -186,27 +241,29 @@ class MumpsSolver(object):
         self._data.update(ir=ir, ic=ic, vals=data, factorized=factorize)
         self.struct.n = n
         self.struct.nz = ir.shape[0]
-        if hasattr(self.struct, 'nnz'):
+        if hasattr(self.struct, "nnz"):
             self.struct.nnz = ir.shape[0]
         self.struct.irn = ir.ctypes.data_as(PMumpsInt)
         self.struct.jcn = ic.ctypes.data_as(PMumpsInt)
-        self.struct.a = data.ctypes.data_as(PMumpsComplex)
+        self.struct.a = data.ctypes.data_as(self.pointermumpstype)
 
         if factorize:
             self._mumps_call(4)
 
     def set_rhs(self, rhs):
         """Set the right hand side of the linear system."""
-        rhs = nm.asarray(rhs, order='F', dtype=self.dtype)
+        rhs = nm.asarray(rhs, order="F", dtype=self.dtype)
 
         n = self.struct.n
         if rhs.shape[0] != n:
-            msg = ('Wrong size of the right hand side vector/matrix! '
-                   f'(rhs: {rhs.shape}, mtx: ({n}, {n}))')
+            msg = (
+                "Wrong size of the right hand side vector/matrix! "
+                f"(rhs: {rhs.shape}, mtx: ({n}, {n}))"
+            )
             raise ValueError(msg)
 
         self._data.update(rhs=rhs)
-        self.struct.rhs = rhs.ctypes.data_as(PMumpsComplex)
+        self.struct.rhs = rhs.ctypes.data_as(self.pointermumpstype)
         self.struct.lrhs = rhs.shape[0]
 
         if len(rhs.shape) == 1:
@@ -214,16 +271,15 @@ class MumpsSolver(object):
         elif len(rhs.shape) == 2:
             self.struct.nrhs = rhs.shape[-1]
         else:
-            raise ValueError('The right hand side must be a vector/matrix!')
-
+            raise ValueError("The right hand side must be a vector/matrix!")
 
     def __call__(self, job):
         """Set the job and call MUMPS."""
-        if 'vals' not in self._data:
-            raise ValueError('The matrix is not set!')
+        if "vals" not in self._data:
+            raise ValueError("The matrix is not set!")
 
-        if job in [3, 5, 6] and 'rhs' not in self._data:
-            raise ValueError('The right hand side vector is not set!')
+        if job in [3, 5, 6] and "rhs" not in self._data:
+            raise ValueError("The right hand side vector is not set!")
 
         self._mumps_call(job)
 
@@ -243,12 +299,11 @@ class MumpsSolver(object):
         # Schur
         schur_list = nm.asarray(schur_list, dtype=nm.int32)
         schur_size = schur_list.shape[0]
-        schur_arr = nm.empty((schur_size, schur_size),
-                             dtype=self.dtype, order='C')
+        schur_arr = nm.empty((schur_size, schur_size), dtype=self.dtype, order="C")
 
         self.struct.size_schur = schur_size
         self.struct.listvar_schur = schur_list.ctypes.data_as(PMumpsInt)
-        self.struct.schur = schur_arr.ctypes.data_as(PMumpsComplex)
+        self.struct.schur = schur_arr.ctypes.data_as(self.pointermumpstype)
 
         # get matrix
         self.struct.schur_lld = schur_size
@@ -279,16 +334,16 @@ class MumpsSolver(object):
         if b is not None:
             self.set_rhs(b.copy())
 
-        if 'rhs' not in self._data:
-            raise ValueError('The right hand side vector is not set!')
+        if "rhs" not in self._data:
+            raise ValueError("The right hand side vector is not set!")
 
         schur_size = self.struct.size_schur
 
         nrhs = self.struct.nrhs
-        schur_rhs = nm.empty((schur_size, nrhs), dtype=self.dtype, order='F')
+        schur_rhs = nm.empty((schur_size, nrhs), dtype=self.dtype, order="F")
         self._schur_rhs = schur_rhs
         self.struct.lredrhs = schur_size
-        self.struct.redrhs = schur_rhs.ctypes.data_as(PMumpsComplex)
+        self.struct.redrhs = schur_rhs.ctypes.data_as(self.pointermumpstype)
 
         # get reduced/condensed RHS
         self.struct.icntl[25] = 1  # Reduction/condensation phase
@@ -315,7 +370,7 @@ class MumpsSolver(object):
         self.struct.job = 3  # solve
         self._mumps_c(ctypes.byref(self.struct))
 
-        return self._data['rhs']
+        return self._data["rhs"]
 
     def _mumps_call(self, job):
         """Set the job and call MUMPS.
@@ -333,14 +388,20 @@ class MumpsSolver(object):
         self._mumps_c(ctypes.byref(self.struct))
 
         if self.struct.infog[0] < 0:
-            raise RuntimeError(f'MUMPS error: {self.struct.infog[0]}')
+            raise RuntimeError(f"MUMPS error: {self.struct.infog[0]}")
 
-    def solve(self, b=None):
+    def solve(self, A=None, b=None):
         """Solve the linear system.
+           Three cases can be managed:
+            - one argument (A) is provided, it corresponds to the right-hand side (matrix must be set before)
+            - two arguments (A, b) are provided, they correspond to the matrix and the right-hand side
+            - none argument is provided, the matrix and right-hand side must be set before
 
         Parameters
         ----------
-        b : array
+        A : array (optional)
+            matrix or RHS if only one argument is provided
+        b : array (optional)
             Right hand side
 
         Returns
@@ -348,15 +409,25 @@ class MumpsSolver(object):
         x : array
             Solution: x = inv(A) * b
         """
+        # manage cases
+        if A is not None:
+            if b is not None:
+                self.set_mtx(A)
+            elif b is None:
+                b = A  # permute arguments
+
         if b is not None:
             self.set_rhs(b.copy())
 
-        if 'factorized' in self._data and self._data['factorized']:
+        if "factorized" in self._data and self._data["factorized"]:
             self(3)
         else:
             self(6)
 
-        return self._data['rhs']
+        return self._data["rhs"]
+    
+    # duplicate method
+    spsolve = solve
 
     def schur_solve(self, schur_list, b=None):
         """Solve the linear system using the Schur complement method.
@@ -377,7 +448,7 @@ class MumpsSolver(object):
 
         S = self.schur_complement(schur_list)
         y2 = self.schur_reduction(b)
-        assume_a = 'sym' if self.struct.sym else 'gen'
+        assume_a = "sym" if self.struct.sym else "gen"
         x2 = sla.solve(S.T, y2, assume_a=assume_a)
 
         return self.schur_expansion(x2)

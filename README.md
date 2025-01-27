@@ -1,11 +1,14 @@
 MUMPSpy
 =======
 
+![PyPI - Version](https://img.shields.io/pypi/v/mumpspy)
+
 A python wrapper for the sparse direct solver.
 
 The wrapper allows:
 
 * real and complex factorization of symmetric or non-symmetric matrices
+* single and double precision
 * Schur complement calculation
 
 Requirements
@@ -19,6 +22,8 @@ Ubuntu/Debian users can use the following command to install the required
 packages:
 
     apt-get install python-mpi4py libmumps-dev
+
+The cmake version of MUMPS could be also used. See [https://github.com/scivision/mumps](https://github.com/scivision/mumps) for details and [CI file](.github/workflows/CI-Ubuntu_tests.yml) for some syntax.
 
 Installation
 ------------
@@ -46,14 +51,34 @@ x = solver.solve(b)  # solve system for a given right-hand side
 print(x)
 ```
 
+Additional examples of syntax can be found in [test file](mumpspy/test/mumpspy_test.py).
+
+Testing
+-------------
+
+`pytest` can be used to run testing and coverage in the package.
+
 Compatibility
 -------------
 
-Tested for the following MUMPS library versions:
+Tested for the following MUMPS library versions (see Actions for current working versions):
+
+<!-- ![](https://byob.yarr.is/luclaurent/mumpspy/Macos-3.12_5.4.1)
+![](https://byob.yarr.is/luclaurent/mumpspy/Macos-3.12_5.5.0) 
+![](https://byob.yarr.is/luclaurent/mumpspy/Macos-3.12_5.5.1) 
+![](https://byob.yarr.is/luclaurent/mumpspy/Macos-3.12_5.6.0) 
+![](https://byob.yarr.is/luclaurent/mumpspy/Macos-3.12_5.6.1)
+![](https://byob.yarr.is/luclaurent/mumpspy/Macos-3.12_5.6.2) 
+![](https://byob.yarr.is/luclaurent/mumpspy/Macos-3.12_5.7.0) 
+![](https://byob.yarr.is/luclaurent/mumpspy/Macos-3.12_5.7.1)
+![](https://byob.yarr.is/luclaurent/mumpspy/Macos-3.12_5.7.2)
+![](https://byob.yarr.is/luclaurent/mumpspy/Macos-3.12_5.7.3)  -->
 
 * 4.10.0
 * 5.0.2
 * 5.1.2
 * 5.2.1
 * 5.4.1
-* 5.6.1
+* 5.5.x
+* 5.6.x
+* 5.7.x
