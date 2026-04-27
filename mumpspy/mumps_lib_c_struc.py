@@ -6,7 +6,7 @@
 import ctypes
 
 MIN_SUPPORTED_VERSION = "4.10.0"
-MAX_SUPPORTED_VERSION = "5.7.999"
+MAX_SUPPORTED_VERSION = "5.8.2"
 
 AUX_LENGTH = 16 * 1024
 
@@ -227,8 +227,10 @@ def get_all_fields(mumps_type="d"):
         "5.7.0": [
             ("new_after", "rowsca_from_mumps", 
                 [
+                    # /* Distributed scaling(out) */
                     ("colsca_loc", cPTypeDataReal),
                     ("rowsca_loc", cPTypeDataReal),
+                    # /* Info after facto */
                     ("rowind", cPMumpsInt),
                     ("colind", cPMumpsInt),
                     ("pivots", cPTypeData)
