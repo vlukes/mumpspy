@@ -82,3 +82,4 @@ Tested for the following MUMPS library versions (see Actions for current working
 * 5.5.x
 * 5.6.x
 * 5.7.x
+* 5.8.2
